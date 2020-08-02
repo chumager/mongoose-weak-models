@@ -1,0 +1,44 @@
+{
+  "name": "template-node",
+  "private": true,
+  "main": "dist/index.js",
+  "author": "Juan Carlos Muñoz <jcmunoz@itdmovil.cl>",
+  "license": "MIT",
+  "scripts": {
+    "upgrade": "yarn upgrade-interactive",
+    "watch": "gulp watch",
+    "build": "gulp",
+    "monitor": "yarn exec nodemon dist/index.js",
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.10.5",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.10.4",
+    "@babel/plugin-proposal-optional-chaining": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "babel-eslint": "^10.1.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "core-js": "3.6.5",
+    "eslint": "^7.5.0",
+    "eslint-plugin-babel": "^5.3.1",
+    "eslint-plugin-mocha": "^7.0.1",
+    "eslint-plugin-prettier": "^3.1.4",
+    "gulp": "^4.0.2",
+    "gulp-babel": "^8.0.0",
+    "gulp-debug": "^4.0.0",
+    "gulp-if": "^3.0.0",
+    "gulp-javascript-obfuscator": "^1.1.6",
+    "gulp-terser": "^1.2.0",
+    "mocha": "^8.0.1",
+    "nodemon": "^2.0.4",
+    "prettier": "^2.0.5"
+  },
+  "obfuscate": false,
+  "dependenciesMeta": {
+    "eslint": {
+      "unplugged": true
+    }
+  }
+}
