@@ -7,9 +7,11 @@ const gif = require("gulp-if");
 const gobf = require("gulp-javascript-obfuscator");
 const debug = require("gulp-debug");
 const babel = require("gulp-babel");
-const path = ["src/**/*.js"];
+const path = require("path");
+const del = require("del");
+const searchPath = ["src/**/*.js"];
 function js() {
-  return src(path, {base: "src"})
+  return src(searchPath, {base: "src"})
     .pipe(debug())
     .pipe(babel())
     .pipe(terser())
@@ -26,9 +28,15 @@ function obfuscate(path) {
     .pipe(dest("dist/"));
 }
 function watch() {
-  const watcher = w(path);
+  const watcher = w(searchPath);
   watcher.on("change", obfuscate);
   watcher.on("add", obfuscate);
+  watcher.on("unlink", filePath => {
+    const filePathFromSrc = path.relative(path.resolve("src"), filePath);
+    const destFilePath = path.resolve("dist", filePathFromSrc);
+    console.log("Eliminando", destFilePath);
+    del.sync(destFilePath);
+  });
   return watcher;
 }
 exports.watch = watch;
