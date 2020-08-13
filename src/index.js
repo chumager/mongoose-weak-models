@@ -14,7 +14,6 @@ const plugin = async (schema, options) => {
       const {path} = model;
       const weakModelName = `${name}_${path}`;
       const weakModel = subSchema.set("weakModel");
-      console.log("new weak model", name, path);
       let weakModelOptions;
       switch (typeof weakModel) {
         case "function":
@@ -40,26 +39,15 @@ const plugin = async (schema, options) => {
         total,
         set,
         applyPlugins = true
-      } = weakModelOptions || {};
+      } = weakModelOptions;
       const nameLC = name.toLowerCase();
-      //const {options} = subSchema;
-      //subSchema = new db.Schema(subSchema.clone());
       subSchema = subSchema.clone();
       if (applyPlugins) subSchema.$globalPluginsApplied = false;
-      console.log(subSchema);
       subSchema.add({
         [nameLC]: {...schema.tree._id, immutable: true, name, ref: name, filter: true, pos: 0, parent: true}
       });
-      //reincorporate the options
-      /*
-       *for (const key in options) {
-       *  console.log("RESET", key, options[key]);
-       *  subSchema.set(key, options[key]);
-       *}
-       */
       if (set) {
         for (const key in set) {
-          console.log("SET", key, set[key]);
           subSchema.set(key, set[key]);
         }
       }
@@ -96,12 +84,11 @@ const plugin = async (schema, options) => {
         "save",
         async function () {
           //first get the modelName to search, the id of the model and my id
-          const parent = await this.constructor.model(name).findById(this[name.toLowerCase()]);
+          const parent = await this.constructor.model(name).findById(this[nameLC]);
           const doc = parent[path].id(this._id);
           doc.set(this);
           doc.$locals = this.$locals;
           parent.$locals = this.$locals;
-          console.log("parent locals", parent.$locals);
           return parent.save();
         },
         {suppressWarning: true}
