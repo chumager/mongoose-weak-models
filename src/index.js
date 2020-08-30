@@ -75,9 +75,8 @@ const plugin = async (schema, options) => {
         });
       Object.keys(projection).forEach(path => {
         if (schema.path(path) && projection[path] === 1) {
-          subSchema.add({
-            [path]: {...schema.tree[path], fromParent: true}
-          });
+          subSchema.add(schema.pick([path]));
+          subSchema.path(path).options.fromParent = true;
         }
       });
       subSchema.method(
