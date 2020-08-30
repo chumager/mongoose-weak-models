@@ -44,7 +44,16 @@ const plugin = async (schema, options) => {
       subSchema = subSchema.clone();
       if (applyPlugins) subSchema.$globalPluginsApplied = false;
       subSchema.add({
-        [nameLC]: {...schema.tree._id, immutable: true, name, ref: name, filter: true, pos: 0, parent: true}
+        [nameLC]: {
+          type: schema.path("_id").instance,
+          ...schema.path("_id").options,
+          immutable: true,
+          name,
+          ref: name,
+          filter: true,
+          pos: 0,
+          parent: true
+        }
       });
       if (set) {
         for (const key in set) {
