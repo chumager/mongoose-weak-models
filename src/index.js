@@ -52,11 +52,11 @@ const plugin = async (schema, options) => {
           ref: name,
           filter: true,
           pos: 0,
+          tablePos: 0,
           parent: true,
           hidden: false
         }
       });
-      //subSchema.path("_id").options.send = true;
       if (set) {
         for (const key in set) {
           subSchema.set(key, set[key]);
@@ -73,6 +73,7 @@ const plugin = async (schema, options) => {
           _position: {
             type: Number,
             name: "Nº",
+            tablePos: 1,
             pos: 1
           }
         });
@@ -81,6 +82,7 @@ const plugin = async (schema, options) => {
           _total: {
             type: Number,
             name: "Tº",
+            tablePos: 2,
             pos: 2
           }
         });
