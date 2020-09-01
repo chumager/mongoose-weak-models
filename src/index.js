@@ -56,7 +56,7 @@ const plugin = async (schema, options) => {
           hidden: false
         }
       });
-      subSchema.path("_id").options.send = true;
+      //subSchema.path("_id").options.send = true;
       if (set) {
         for (const key in set) {
           subSchema.set(key, set[key]);
