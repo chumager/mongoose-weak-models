@@ -52,7 +52,8 @@ const plugin = async (schema, options) => {
           ref: name,
           filter: true,
           pos: 0,
-          parent: true
+          parent: true,
+          hidden: false
         }
       });
       if (set) {
@@ -93,7 +94,17 @@ const plugin = async (schema, options) => {
         async function () {
           //first get the modelName to search, the id of the model and my id
           const parent = await this.constructor.model(name).findById(this[nameLC]);
-          const doc = parent[path].id(this._id);
+          let doc;
+          if (this._id) doc = parent[path].id(this._id);
+          else if (this._position) {
+            const localPosition = position === "Human" ? this._position - 1 : this._position;
+            doc = parent[path][localPosition];
+          } else
+            throw new Error(
+              `weak model ${weakModelName} ain't have _id nor _position\n${JSON.stringify(this, null, 2)}`
+            );
+          if (!doc)
+            throw new Error(`weak model ${weakModelName} doesn't exist, id: ${this._id}, position: ${this._position}`);
           doc.set(this);
           doc.$locals = this.$locals;
           parent.$locals = this.$locals;
