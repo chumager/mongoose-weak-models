@@ -90,6 +90,7 @@ const plugin = async (schema, options) => {
         if (schema.path(path) && projection[path] === 1) {
           subSchema.add(schema.pick([path]));
           subSchema.path(path).options.fromParent = true;
+          subSchema.path(path).options.immutable = true;
         }
       });
       subSchema.method(
