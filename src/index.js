@@ -118,7 +118,6 @@ const plugin = async (schema, options) => {
       if (extraFields) subSchema.add(extraFields);
       if (statics) subSchema.static(statics);
       if (methods) subSchema.method(methods);
-      if (post) post(subSchema, schema, db);
 
       const viewOn = schema.set("collection") || db.pluralize()(name);
       const localCollection = db.pluralize()(weakModelName);
@@ -171,6 +170,7 @@ const plugin = async (schema, options) => {
           ...(collation ? {collation} : {})
         });
       }
+      if (post) post(subSchema, schema, db);
       db.model(weakModelName, subSchema);
       //TODO recursion...
     })
