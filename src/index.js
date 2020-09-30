@@ -1,7 +1,13 @@
+/* TODO
+ * se debe validar la estructura recursiva para evitar choques.
+ * se debe validar si se necesitará usar un parámetro tipo "keep" para evitar sobrecarga en la configuración recursiva.
+ */
+import mutex from "@chumager/mongoose-mutex";
 const plugin = async (schema, options) => {
   if (!options.name) throw new Error("option.name is needed to create new weak Model");
   if (!options.db) throw new Error("option.db is needed to create new weak Model");
-  const {name, db} = options;
+  let {name} = options;
+  const {db} = options;
   const weakModels = [];
   schema.childSchemas.forEach(({schema: subSchema, model}) => {
     //detectamos si es un arreglo de subdocumentos
@@ -38,7 +44,8 @@ const plugin = async (schema, options) => {
         postAggregate,
         total,
         set,
-        applyPlugins = true
+        applyPlugins = true,
+        parentName
       } = weakModelOptions;
       const nameLC = name.toLowerCase();
       subSchema = subSchema.clone();
@@ -48,7 +55,7 @@ const plugin = async (schema, options) => {
           type: schema.path("_id").instance,
           ...schema.path("_id").options,
           immutable: true,
-          name,
+          name: parentName || name,
           ref: name,
           filter: true,
           pos: 0,
@@ -173,16 +180,23 @@ const plugin = async (schema, options) => {
       }
       if (post) post(subSchema, schema, db);
       db.model(weakModelName, subSchema);
-      //TODO recursion...
+      await plugin(subSchema, {name: weakModelName, db});
     })
   );
+  return;
 };
 
 async function weakModels(db) {
+  const {lock} = mutex({db, TTL: 30});
   const {models} = db;
   await Promise.all(
     Object.keys(models).map(async modelName => {
-      await plugin(models[modelName].schema, {name: modelName, db});
+      await lock({
+        lockName: modelName,
+        fn: async () => {
+          await plugin(models[modelName].schema, {name: modelName, db}).atLeast(20000);
+        }
+      });
     })
   );
 }
