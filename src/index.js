@@ -177,6 +177,7 @@ const plugin = async (schema, options) => {
       try {
         //try to lock
         free = await lock({lockName: localCollection});
+        console.log("FREE", localCollection);
         //free pass so try to drop
         try {
           await db.connection.dropCollection(localCollection);
@@ -195,6 +196,7 @@ const plugin = async (schema, options) => {
       } catch (err) {
         //couldn't lock so there was created already
         console.log("no pude hacer lock para", localCollection);
+        console.log(err);
       }
       if (post) post(subSchema, schema, db);
       db.model(weakModelName, subSchema);
