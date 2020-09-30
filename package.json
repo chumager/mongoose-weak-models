@@ -48,5 +48,7 @@
       "unplugged": true
     }
   },
-  "private": false
+  "dependencies": {
+    "@chumager/mongoose-mutex": "^1.0.3"
+  }
 }
