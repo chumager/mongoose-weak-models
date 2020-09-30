@@ -3,6 +3,9 @@
  * se debe validar si se necesitará usar un parámetro tipo "keep" para evitar sobrecarga en la configuración recursiva.
  */
 import mutex from "@chumager/mongoose-mutex";
+import {functions} from "@chumager/promise-helpers";
+class localPromise extends Promise {}
+functions.delay(localPromise);
 const plugin = async (schema, options) => {
   if (!options.name) throw new Error("option.name is needed to create new weak Model");
   if (!options.db) throw new Error("option.db is needed to create new weak Model");
@@ -169,14 +172,26 @@ const plugin = async (schema, options) => {
       }
       if (preAggregate) aggregate = [].concat(preAggregate, aggregate);
       if (postAggregate) aggregate = [].concat(aggregate, postAggregate);
+      const {lock} = mutex({db, TTL: 30});
+      let free = () => true;
       try {
-        await db.connection.dropCollection(localCollection);
-      } finally {
-        await db.connection.createCollection(localCollection, {
-          viewOn,
-          pipeline: aggregate,
-          ...(collation ? {collation} : {})
-        });
+        //try to lock
+        free = await lock({lockName: localCollection});
+        //free pass so try to drop
+        try {
+          await db.connection.dropCollection(localCollection);
+        } finally {
+          //no matter if can drop, create the new view
+          await db.connection.createCollection(localCollection, {
+            viewOn,
+            pipeline: aggregate,
+            ...(collation ? {collation} : {})
+          });
+        }
+        //free after 20 secs.
+        localPromise.delay(20000).then(free());
+      } catch (err) {
+        //couldn't lock so there was created already
       }
       if (post) post(subSchema, schema, db);
       db.model(weakModelName, subSchema);
@@ -187,17 +202,9 @@ const plugin = async (schema, options) => {
 };
 
 async function weakModels(db) {
-  const {lock} = mutex({db, TTL: 30});
   const {models} = db;
   await Promise.all(
-    Object.keys(models).map(async modelName => {
-      await lock({
-        lockName: modelName,
-        fn: async () => {
-          await plugin(models[modelName].schema, {name: modelName, db}).atLeast(20000);
-        }
-      });
-    })
+    Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db}))
   );
 }
 export {weakModels, plugin};
