@@ -5,13 +5,13 @@
 import mutex from "@chumager/mongoose-mutex";
 import {functions} from "@chumager/promise-helpers";
 class localPromise extends Promise {}
+let lock;
 functions.delay(localPromise);
 const plugin = async (schema, options) => {
   if (!options.name) throw new Error("option.name is needed to create new weak Model");
   if (!options.db) throw new Error("option.db is needed to create new weak Model");
   let {name} = options;
   const {db} = options;
-  const {lock} = mutex({db, TTL: 30});
   const weakModels = [];
   schema.childSchemas.forEach(({schema: subSchema, model}) => {
     //detectamos si es un arreglo de subdocumentos
@@ -202,6 +202,7 @@ const plugin = async (schema, options) => {
 };
 
 async function weakModels(db) {
+  ({lock} = mutex({db, TTL: 30}));
   const {models} = db;
   await Promise.all(
     Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db}))
