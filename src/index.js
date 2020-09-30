@@ -173,13 +173,14 @@ const plugin = async (schema, options) => {
       }
       if (preAggregate) aggregate = [].concat(preAggregate, aggregate);
       if (postAggregate) aggregate = [].concat(aggregate, postAggregate);
-      let free = () => true;
+      let free;
       try {
         //try to lock
         free = await lock({lockName: localCollection});
         //free pass so try to drop
         try {
           await db.connection.dropCollection(localCollection);
+          console.log("DROP", localCollection);
         } finally {
           //no matter if can drop, create the new view
           await db.connection.createCollection(localCollection, {
@@ -187,11 +188,13 @@ const plugin = async (schema, options) => {
             pipeline: aggregate,
             ...(collation ? {collation} : {})
           });
+          console.log("CREATE", localCollection);
         }
         //free after 20 secs.
-        localPromise.delay(20000).then(free());
+        if (free) localPromise.delay(20000).then(free());
       } catch (err) {
         //couldn't lock so there was created already
+        console.log("no pude hacer lock para", localCollection);
       }
       if (post) post(subSchema, schema, db);
       db.model(weakModelName, subSchema);
