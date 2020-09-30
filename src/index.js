@@ -11,6 +11,7 @@ const plugin = async (schema, options) => {
   if (!options.db) throw new Error("option.db is needed to create new weak Model");
   let {name} = options;
   const {db} = options;
+  const {lock} = mutex({db, TTL: 30});
   const weakModels = [];
   schema.childSchemas.forEach(({schema: subSchema, model}) => {
     //detectamos si es un arreglo de subdocumentos
@@ -172,7 +173,6 @@ const plugin = async (schema, options) => {
       }
       if (preAggregate) aggregate = [].concat(preAggregate, aggregate);
       if (postAggregate) aggregate = [].concat(aggregate, postAggregate);
-      const {lock} = mutex({db, TTL: 30});
       let free = () => true;
       try {
         //try to lock
