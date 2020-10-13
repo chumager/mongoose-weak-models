@@ -3,15 +3,15 @@
  * se debe validar si se necesitará usar un parámetro tipo "keep" para evitar sobrecarga en la configuración recursiva.
  */
 import mutex from "@chumager/mongoose-mutex";
-import {functions} from "@chumager/promise-helpers";
+import {promiseHelpers} from "@chumager/promise-helpers";
 class localPromise extends Promise {}
 let lock;
-functions.delay(localPromise);
+promiseHelpers(localPromise);
 const plugin = async (schema, options) => {
   if (!options.name) throw new Error("option.name is needed to create new weak Model");
   if (!options.db) throw new Error("option.db is needed to create new weak Model");
   let {name} = options;
-  const {db} = options;
+  const {db, itdfw} = options;
   const weakModels = [];
   schema.childSchemas.forEach(({schema: subSchema, model}) => {
     //detectamos si es un arreglo de subdocumentos
@@ -59,13 +59,17 @@ const plugin = async (schema, options) => {
           type: schema.path("_id").instance,
           ...schema.path("_id").options,
           immutable: true,
-          name: parentName || name,
-          ref: name,
-          filter: true,
-          pos: 0,
-          tablePos: 0,
           parent: true,
-          hidden: false
+          ...(itdfw
+            ? {
+                name: parentName || name,
+                ref: name,
+                filter: true,
+                pos: 0,
+                tablePos: 0,
+                hidden: false
+              }
+            : {})
         }
       });
       if (set) {
@@ -73,28 +77,48 @@ const plugin = async (schema, options) => {
           subSchema.set(key, set[key]);
         }
       }
+      //avoid autoCreate
+      subSchema.set("autoCreate", false);
+      subSchema.set("autoIndex", false);
       subSchema.static({
         parentPath: nameLC,
         parentModel() {
           return this.model(name);
         }
       });
+      subSchema.method({
+        parentDocument({lean = false, select} = {}) {
+          console.log(nameLC, this[nameLC]);
+          const parent = this.constructor.parentModel().findById(this[nameLC]);
+          if (lean) parent.lean();
+          if (select) parent.select(select);
+          return parent;
+        }
+      });
       if (position)
         subSchema.add({
           _position: {
             type: Number,
-            name: "Nº",
-            tablePos: 1,
-            pos: 1
+            ...(itdfw
+              ? {
+                  name: "Nº",
+                  tablePos: 1,
+                  pos: 1
+                }
+              : {})
           }
         });
       if (total)
         subSchema.add({
           _total: {
             type: Number,
-            name: "Tº",
-            tablePos: 2,
-            pos: 2
+            ...(itdfw
+              ? {
+                  name: "Tº",
+                  tablePos: 2,
+                  pos: 2
+                }
+              : {})
           }
         });
       Object.keys(projection).forEach(path => {
@@ -173,44 +197,40 @@ const plugin = async (schema, options) => {
       }
       if (preAggregate) aggregate = [].concat(preAggregate, aggregate);
       if (postAggregate) aggregate = [].concat(aggregate, postAggregate);
-      let free;
-      try {
-        //try to lock
-        free = await lock({lockName: localCollection});
-        console.log("FREE", localCollection);
-        //free pass so try to drop
-        try {
-          await db.connection.dropCollection(localCollection);
-          console.log("DROP", localCollection);
-        } finally {
-          //no matter if can drop, create the new view
-          await db.connection.createCollection(localCollection, {
-            viewOn,
-            pipeline: aggregate,
-            ...(collation ? {collation} : {})
-          });
-          console.log("CREATE", localCollection);
+      lock({lockName: localCollection}).then(
+        async free => {
+          try {
+            await db.connection.dropCollection(localCollection);
+          } catch (err) {
+            //drop error silently
+          } finally {
+            //no matter if can drop, create the new view
+            await db.connection.createCollection(localCollection, {
+              viewOn,
+              pipeline: aggregate,
+              ...(collation ? {collation} : {})
+            });
+            localPromise.delay(20000).then(free);
+          }
+        },
+        err => {
+          if (err.name !== "MutexLockError") throw err;
         }
-        //free after 20 secs.
-        if (free) localPromise.delay(20000).then(free());
-      } catch (err) {
-        //couldn't lock so there was created already
-        console.log("no pude hacer lock para", localCollection);
-        console.log(err);
-      }
+      );
+
       if (post) post(subSchema, schema, db);
       db.model(weakModelName, subSchema);
-      await plugin(subSchema, {name: weakModelName, db});
+      await plugin(subSchema, {name: weakModelName, db, itdfw});
     })
   );
   return;
 };
 
-async function weakModels(db) {
+async function weakModels(db, itdfw = false) {
   ({lock} = mutex({db, TTL: 30}));
   const {models} = db;
   await Promise.all(
-    Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db}))
+    Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db, itdfw}))
   );
 }
 export {weakModels, plugin};

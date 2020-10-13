@@ -3,7 +3,7 @@ const cluster = require("cluster");
 
 if (cluster.isMaster) {
   //creamos CPU hijos
-  for (let i = 0; i < 1 /*require("os").cpus().length*/; i++) {
+  for (let i = 0; i < 1; /*require("os").cpus().length*/ i++) {
     cluster.fork();
   }
 } else {
@@ -15,9 +15,8 @@ async function main() {
   });
   const mongoose = require("mongoose");
   const {weakModels} = require("../");
-  const {default: promiseHelpers} = require("@chumager/promise-helpers");
-  class localPromise extends Promise {}
-  promiseHelpers(localPromise);
+  const {promiseHelpers} = require("@chumager/promise-helpers");
+  promiseHelpers();
   const db = new mongoose.Mongoose();
   await db.connect("mongodb://localhost/test", {
     useNewUrlParser: true,
@@ -63,18 +62,6 @@ async function main() {
       filter: true
     }
   });
-  subSchema.index({test: 1});
-  db.plugin(schema => {
-    schema.eachPath((pathname, schemaType) => {
-      if (schemaType.options.filter) {
-        let index = schema.indexes().find(index => index[0][pathname]);
-        console.log(schema.set("weakModel"));
-        if (!index && pathname !== "_id" && !schema.set("weakModel")) {
-          schema.index({[pathname]: 1}, {partialFilterExpression: {active: true}});
-        }
-      }
-    });
-  });
   const model = db.model("testModel", schema);
 
   await weakModels(db);
@@ -85,8 +72,13 @@ async function main() {
     {subSchema: [{test: 31}, {test: 32}]},
     {subSchema: [{test: 41}, {test: 42}]}
   ]);
+
+  const child = await db.model("testModel_subSchema").findById("5f8639c14f81ec5fb662cb67");
+
+  console.log("PARENT Document", cluster.worker.id, child);
+  console.log("PARENT Document", cluster.worker.id, await child.parentDocument());
+  //console.log("PARENT Document", cluster.worker.id, await db.model("testModel_subSchema").findOne().exec().get("parentModel"));
   console.log("PARENT", cluster.worker.id, await model.countDocuments());
   console.log("WEAK", cluster.worker.id, await db.model("testModel_subSchema").countDocuments());
-  await localPromise.delay(3000);
   process.exit(0);
 }
