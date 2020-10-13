@@ -19,7 +19,7 @@ async function main() {
   class localPromise extends Promise {}
   promiseHelpers(localPromise);
   const db = new mongoose.Mongoose();
-  await db.connect("mongodb+srv://dobleimpacto:AlzkmwpTgSWao@dev.trcwd.mongodb.net/Dev?retryWrites=true&w=majority", {
+  await db.connect("mongodb://localhost/test", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true
