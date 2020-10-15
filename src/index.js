@@ -52,6 +52,17 @@ const plugin = async (schema, options) => {
         parentName
       } = weakModelOptions;
       const nameLC = name.toLowerCase();
+      //weak model association
+      function wmn() {
+        return weakModelName;
+      }
+      subSchema.method({
+        weakModelName: wmn
+      });
+      subSchema.static({
+        weakModelName: wmn
+      });
+
       subSchema = subSchema.clone();
       if (applyPlugins) subSchema.$globalPluginsApplied = false;
       subSchema.add({
@@ -130,9 +141,11 @@ const plugin = async (schema, options) => {
       });
       subSchema.method(
         "save",
+        //TODO apply sessions
         async function () {
           //first get the modelName to search, the id of the model and my id
           const parent = await this.constructor.model(name).findById(this[nameLC]);
+          if (!parent) throw new Error(`there is no parent in ${name} for ${weakModelName} document ${this._id}`);
           let doc;
           if (this._id) doc = parent[path].id(this._id);
           else if (this._position) {
