@@ -142,10 +142,13 @@ const plugin = async (schema, options) => {
             throw new Error(
               `weak model ${weakModelName} ain't have _id nor _position\n${JSON.stringify(this, null, 2)}`
             );
-          if (!doc)
-            throw new Error(`weak model ${weakModelName} doesn't exist, id: ${this._id}, position: ${this._position}`);
-          doc.set(this);
-          doc.$locals = this.$locals;
+          if (doc) {
+            doc.set(this);
+            doc.$locals = this.$locals;
+          } else {
+            //no doc, so push it
+            parent[path].push(this);
+          }
           parent.$locals = this.$locals;
           return parent.save();
         },
