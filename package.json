@@ -1,6 +1,6 @@
 {
   "name": "@chumager/mongoose-weak-models",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "main": "dist/index.js",
   "module": "src/index.js",
   "files": [
