@@ -52,16 +52,15 @@ const plugin = async (schema, options) => {
         parentName
       } = weakModelOptions;
       const nameLC = name.toLowerCase();
-      //weak model association
-      function wmn() {
-        return weakModelName;
-      }
-      subSchema.method({
-        weakModelName: wmn
-      });
-      subSchema.static({
-        weakModelName: wmn
-      });
+      /*
+       * weak model association
+       * because the subSchema is already compiled into the parent model,
+       * the only way AFAIK is to assign a direct property into the subSchema.
+       * That way any plugin from the subSchema can know the name of the weak entity
+       * by this.schema.weakModelName  and from document by 
+       * this.constructor.schema.weakModelName
+       */
+      subSchema.weakModelName = weakModelName;
 
       subSchema = subSchema.clone();
       if (applyPlugins) subSchema.$globalPluginsApplied = false;
