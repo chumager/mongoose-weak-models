@@ -98,7 +98,6 @@ const plugin = async (schema, options) => {
       });
       subSchema.method({
         parentDocument({lean = false, select} = {}) {
-          console.log(nameLC, this[nameLC]);
           const parent = this.constructor.parentModel().findById(this[nameLC]);
           if (lean) parent.lean();
           if (select) parent.select(select);
