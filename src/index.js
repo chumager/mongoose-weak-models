@@ -57,7 +57,7 @@ const plugin = async (schema, options) => {
        * because the subSchema is already compiled into the parent model,
        * the only way AFAIK is to assign a direct property into the subSchema.
        * That way any plugin from the subSchema can know the name of the weak entity
-       * by this.schema.weakModelName  and from document by 
+       * by this.schema.weakModelName  and from document by
        * this.constructor.schema.weakModelName
        */
       subSchema.weakModelName = weakModelName;
@@ -232,7 +232,7 @@ const plugin = async (schema, options) => {
         }
       );
 
-      if (post) post(subSchema, schema, db);
+      if (post) await post({weakSchema: subSchema, parentSchema: schema, db, aggregate, weakModelName});
       db.model(weakModelName, subSchema);
       await plugin(subSchema, {name: weakModelName, db, itdfw});
     })
