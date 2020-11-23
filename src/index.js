@@ -239,7 +239,7 @@ const plugin = async (schema, options = {}) => {
 
       if (post) await post({weakSchema: subSchema, parentSchema: schema, db, aggregate, weakModelName});
       db.model(weakModelName, subSchema);
-      await plugin(subSchema, {name: weakModelName, db, itdfw});
+      await plugin(subSchema, {name: weakModelName, db, itdfw, ...options});
     })
   );
   return;
@@ -249,7 +249,9 @@ async function weakModels(db, options, itdfw = false) {
   ({lock} = mutex({db, TTL: 60}));
   const {models} = db;
   await Promise.all(
-    Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db, itdfw, ...options}))
+    Object.keys(models).map(
+      async modelName => await plugin(models[modelName].schema, {name: modelName, db, itdfw, ...options})
+    )
   );
 }
 export {weakModels, plugin};
