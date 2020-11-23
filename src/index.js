@@ -4,14 +4,18 @@
  */
 import mutex from "@chumager/mongoose-mutex";
 import {promiseHelpers} from "@chumager/promise-helpers";
+import merge from "lodash.merge";
 class localPromise extends Promise {}
 let lock;
 promiseHelpers(localPromise);
-const plugin = async (schema, options) => {
+const plugin = async (schema, options = {}) => {
   if (!options.name) throw new Error("option.name is needed to create new weak Model");
   if (!options.db) throw new Error("option.db is needed to create new weak Model");
   let {name} = options;
   const {db, itdfw} = options;
+  delete options.name;
+  delete options.db;
+  delete options.itdfw;
   const weakModels = [];
   schema.childSchemas.forEach(({schema: subSchema, model}) => {
     //detectamos si es un arreglo de subdocumentos
@@ -36,6 +40,7 @@ const plugin = async (schema, options) => {
           weakModelOptions = {};
       }
 
+      merge(weakModelOptions, options);
       const {
         projection = {},
         statics,
@@ -240,11 +245,11 @@ const plugin = async (schema, options) => {
   return;
 };
 
-async function weakModels(db, itdfw = false) {
-  ({lock} = mutex({db, TTL: 30}));
+async function weakModels(db, options, itdfw = false) {
+  ({lock} = mutex({db, TTL: 60}));
   const {models} = db;
   await Promise.all(
-    Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db, itdfw}))
+    Object.keys(models).map(async modelName => await plugin(models[modelName].schema, {name: modelName, db, itdfw, ...options}))
   );
 }
 export {weakModels, plugin};
