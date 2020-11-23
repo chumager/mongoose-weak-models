@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@chumager/mongoose-mutex": "^1.0.8",
-    "@chumager/promise-helpers": "^1.1.4"
+    "@chumager/promise-helpers": "^1.1.4",
+    "lodash.merge": "^4.6.2"
   }
 }
