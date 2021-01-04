@@ -82,7 +82,8 @@ const plugin = async (schema, options = {}) => {
                 filter: true,
                 pos: 0,
                 tablePos: 0,
-                hidden: false
+                hidden: false,
+                required: true
               }
             : {})
         }
@@ -140,6 +141,7 @@ const plugin = async (schema, options = {}) => {
           subSchema.add(schema.pick([path]));
           subSchema.path(path).options.fromParent = true;
           subSchema.path(path).options.immutable = true;
+          if (itdfw) subSchema.path(path).options.hidden = ["create", "update"];
         }
       });
       subSchema.method(
